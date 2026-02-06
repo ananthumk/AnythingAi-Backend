@@ -25,7 +25,7 @@ function App() {
   }
 
  
-  const url = 'http://localhost:5000/api/v1'
+  const url = 'https://anythingai-backend-wfd4.onrender.com/api/v1'
   return (
    <AppContext.Provider value={{
     token: token, url: url, updateToken: updateToken
