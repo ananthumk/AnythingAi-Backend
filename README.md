@@ -2,6 +2,9 @@
 
 A full-stack task management system with user authentication, role-based access control, and interactive UI. Built with **Node.js/Express** backend, **React** frontend, **MongoDB** database, and **JWT** authentication.
 
+Backend Url - https://anythingai-backend-wfd4.onrender.com
+Frontend Url - https://anything-ai-backend.vercel.app/
+
 ## 📋 Features
 
 ### Backend Features
