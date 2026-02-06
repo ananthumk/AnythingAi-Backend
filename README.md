@@ -80,10 +80,7 @@ Anything Ai/
 │   ├── package.json
 │   ├── .env
 │   ├── API_DOCUMENTATION.md
-│   ├── QUICK_REFERENCE.md
 │   ├── README.md                    # This file
-│   ├── TESTING_GUIDE.md
-│   └── CODE_REVIEW.md
 ```
 
 ---
