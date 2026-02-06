@@ -10,7 +10,10 @@ const swaggerSpec = require('./src/config/swagger');
 
 const app = express()
 
-app.use(cors())
+app.use(cors({
+  origin: 'https://anything-ai-backend.vercel.app/',
+  credentials: true
+}))
 app.use(express.json())
 
 // Connect to Database
