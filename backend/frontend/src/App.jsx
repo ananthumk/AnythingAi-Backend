@@ -25,7 +25,7 @@ function App() {
   }
 
  
-  const url = 'https://thwork-assignment.onrender.com'
+  const url = 'http://localhost:5000/api/v1'
   return (
    <AppContext.Provider value={{
     token: token, url: url, updateToken: updateToken
@@ -33,7 +33,6 @@ function App() {
       <Routes>
         <Route path='/login' element={<LoginForm />} />
         <Route path='/' element={<ProtectedRoute element={<UserDashboard />} />} />
-
         <Route path='/admin' element={<ProtectedRoute element={<AdminDashboard />} />} />
         <Route path='/not-found' element={<NotFound />} />
         <Route path="*" element={<Navigate to="/not-found" replace />} />

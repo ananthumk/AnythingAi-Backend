@@ -9,6 +9,7 @@ export default function Navbar(){
     const handleLogout = () => {
          updateToken('')
          localStorage.removeItem('token')
+         navigate('/login')
     }
     return (
         <div className="w-full bg-white py-3">

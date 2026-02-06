@@ -6,20 +6,34 @@ import { BiSolidLeftArrow, BiSolidRightArrow } from "react-icons/bi";
 import { useContext, useEffect, useState } from "react";
 import AppContext from "../context/AppContext";
 import TaskCard from "../components/TaskCard";
+import Task from "../components/Task";
+import EditTask from "../components/EditTask";
 import { Oval } from 'react-loader-spinner'
 import { jwtDecode } from 'jwt-decode'
+import { toast, ToastContainer } from 'react-toastify'
+import axios from 'axios'
 
 export default function UserDashboard() {
    const navigate = useNavigate()
    const [taskData, setTaskData] = useState([])
    const [totalPage, setTotalPage] = useState(null)
-   const [insightData, setInsightData] = useState({})
    const [filter, setFilter] = useState({
       status: '', priority: '', search: ''
    })
    const [errMsg, setErrMsg] = useState('')
    const [page, setPage] = useState(1)
-   const [userRole, setUserRole] = useState('') 
+   const [userRole, setUserRole] = useState('')
+   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+   const [selectedTask, setSelectedTask] = useState(null)
+   const [isLoading, setIsLoading] = useState(true)
+
+   useEffect(() => {
+      if(errMsg) {
+         toast.error(errMsg)
+      }
+   }, [errMsg]) 
+   
    const { url, token } = useContext(AppContext)
 
 
@@ -54,33 +68,52 @@ export default function UserDashboard() {
       }
    }
 
+   const handleOpenTaskModal = () => {
+      setIsTaskModalOpen(true)
+   }
+
+   const handleCloseTaskModal = () => {
+      setIsTaskModalOpen(false)
+   }
+
+   const handleOpenEditModal = (task) => {
+      setSelectedTask(task)
+      setIsEditModalOpen(true)
+   }
+
+   const handleCloseEditModal = () => {
+      setIsEditModalOpen(false)
+      setSelectedTask(null)
+   }
+
+   const handleRefreshTasks = () => {
+      setPage(1)
+      setFilter({ status: '', priority: '', search: '' })
+   }
+
    console.log(url, token)
    useEffect(() => {
       const fetchData = async () => {
          if (!token) return
+         setIsLoading(true)
          try {
-            const urlString = `${url}/tasks?status=${filter.status}&priority=${filter.priority}&search=${filter.search}&page=${page}`
-            console.log(urlString)
-            const options = {
-               method: 'GET',
+            const urlString = `${url}/task?status=${filter.status}&priority=${filter.priority}&search=${filter.search}&page=${page}`
+            const response = await axios.get(urlString, {
                headers: {
-                  'Content-Type': 'application/json',
-                  "Authorization": `Bearer ${token}`
+                  'Authorization': `Bearer ${token}`
                }
-            }
-            const response = await fetch(urlString, options)
-            const data = await response.json()
-            console.log(data)
-            if (response.ok) {
-               setTaskData(data.tasks)
-               setTotalPage(data.totalPage)
-               console.log(data)
+            })
+            if (response.data.tasks) {
+               setTaskData(response.data.tasks)
+               setTotalPage(response.data.totalPage)
                setErrMsg('')
             } else {
-               setErrMsg(data.message)
+               setErrMsg(response.data.message || 'Failed to fetch tasks')
             }
          } catch (error) {
-            setErrMsg(error.message)
+            setErrMsg(error.response?.data?.message || error.message)
+         } finally {
+            setIsLoading(false)
          }
       }
 
@@ -89,40 +122,10 @@ export default function UserDashboard() {
    }, [url, token, filter, page])
 
   
-   useEffect(() => {
-      if (userRole === 'admin') return 
-      
-      const fetchInsight = async () => {
-         if (!token) return
-
-         const urlString = `${url}/insight`
-         const options = {
-            method: 'GET',
-            headers: {
-               'Content-Type': 'application/json',
-               'Authorization': `Bearer ${token}`
-            }
-         }
-         try {
-            const response = await fetch(urlString, options)
-            const data = await response.json()
-
-            if (response.ok) {
-               setErrMsg('')
-               console.log('in', data)
-               setInsightData(data)
-            } else {
-               setErrMsg(data.message)
-            }
-         } catch (error) {
-            setErrMsg(error.message)
-         }
-      }
-
-      fetchInsight()
-   }, [url, token, userRole]) 
+  
 
    return (
+    <>
       <div className="">
          <Navbar />
          <div className="w-full min-h-[90vh] flex flex-col py-6 gap-3 bg-neutral-100">
@@ -151,36 +154,54 @@ export default function UserDashboard() {
                   </select>
                </div>
             </div>
-            {taskData?.length === 0 ? <div className="w-full flex justify-center items-center mt-20">
-               <Oval
-                  height={50}
-                  width={50}
-                  color="#4fa94d"
-                  visible={true}
-                  ariaLabel="oval-loading"
-                  secondaryColor="#4fa94d"
-                  strokeWidth={2}
-                  strokeWidthSecondary={2}
-               />
-            </div> :
+            {isLoading ? (
+               <div className="w-full flex justify-center items-center mt-20">
+                  <Oval
+                     height={50}
+                     width={50}
+                     color="#4fa94d"
+                     visible={true}
+                     ariaLabel="oval-loading"
+                     secondaryColor="#4fa94d"
+                     strokeWidth={2}
+                     strokeWidthSecondary={2}
+                  />
+               </div>
+            ) : taskData?.length === 0 ? (
+               <div className="w-full flex flex-col justify-center items-center mt-20 gap-4">
+                  <p className="text-lg text-gray-600 font-semibold">No tasks found</p>
+                  <p className="text-sm text-gray-500">Create your first task to get started</p>
+                  <button
+                     onClick={handleOpenTaskModal}
+                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                     Create Task
+                  </button>
+               </div>
+            ) : (
                <div className="w-[85%] mx-auto">
                   <p className="text-[15px] sm:text-[19px] text-black">Tasks</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 flex-wrap gap-5 mt-3">
                      {taskData?.map(task => (
-                        <TaskCard key={task._id} task={task} />
+                        <TaskCard key={task._id} task={task} onDelete={() => setTaskData(taskData.filter(t => t._id !== task._id))} onEdit={handleOpenEditModal} />
                      ))}
                   </div>
-               </div>}
+               </div>
+            )}
 
                <div className="flex justify-center gap-2 items-center">
                    <BiSolidLeftArrow onClick={handlePaginationD} className="w-4 h-4 cursor-pointer" />
                    <h4 className="text-[18px] font-semibold">{page}</h4>
                    <BiSolidRightArrow onClick={handlePaginationI} className="w-4 h-4 cursor-pointer" />
                </div>
-            <div onClick={() => { navigate('/task') }} style={{ zIndex: 1000 }} className="w-10 h-10 cursor-pointer fixed bottom-3 md:bottom-10 right-3 md:right-12 flex justify-center items-center rounded-full bg-blue-800">
+            <div onClick={handleOpenTaskModal} style={{ zIndex: 1000 }} className="w-10 h-10 cursor-pointer fixed bottom-3 md:bottom-10 right-3 md:right-12 flex justify-center items-center rounded-full bg-blue-800 hover:bg-blue-900">
                <RiAddLargeFill className="w-5 h-5 text-white" />
             </div>
          </div>
       </div>
+      <Task isOpen={isTaskModalOpen} onClose={handleCloseTaskModal} onTaskCreated={handleRefreshTasks} />
+      <EditTask isOpen={isEditModalOpen} taskId={selectedTask?._id} task={selectedTask} onClose={handleCloseEditModal} onTaskUpdated={handleRefreshTasks} />
+      <ToastContainer position="bottom-right" autoClose={3000} />
+    </>
    )
 }

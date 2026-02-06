@@ -30,14 +30,42 @@ const addTask = async (req, res) => {
 
 const getAllTask = async (req, res) => {
     try {
-        const userId = req.user.id
-        const tasks = await Task.find({ createdBy: userId }).sort({ createdAt: -1 })
+        const { status, priority, search, page } = req.query
+        const pageNumber = parseInt(page) || 1
+        const limit = 6
+        const skip = (pageNumber - 1) * limit
 
-        res.status(200).json({ tasks })
+        // Build the filter with user's own tasks only
+        const filter = { createdBy: req.user.id }
+        if (status) filter.status = status
+        if (priority) filter.priority = priority
 
+        // Add search to filter if provided
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } }
+            ]
+        }
+
+        // Count total tasks matching filter
+        const totalTasks = await Task.countDocuments(filter)
+
+        // Fetch tasks with pagination, search, and filter
+        const tasks = await Task.find(filter)
+            .skip(skip)
+            .limit(limit)
+            .sort({ createdAt: -1 })
+
+        return res.status(200).json({ 
+            tasks, 
+            totalPages: Math.ceil(totalTasks / limit),
+            currentPage: pageNumber,
+            totalTasks
+        })
     } catch (error) {
-        console.log('Get all task: ', error)
-        res.status(500).json({ message: "Server Error" })
+        console.log('Get Tasks Error:', error.message)
+        return res.status(500).json({ message: 'Internal Server Error', error: error.message })
     }
 }
 
@@ -127,8 +155,66 @@ const deleteTask = async (req, res) => {
 
 const getallTasks = async (req, res) => {
     try {
-        const tasks = await Task.find().populate('createdBy', 'name email').sort({createdAt: -1})
-        res.status(200).json({ tasks })
+        const { status, priority, search, page } = req.query
+        const pageNumber = parseInt(page) || 1
+        const limit = 6
+        const skip = (pageNumber - 1) * limit
+
+        // Build the filter
+        const filter = {}
+        if (status) filter.status = status
+        if (priority) filter.priority = priority
+
+        // Add search to filter if provided
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: "i" } },
+                { description: { $regex: search, $options: "i" } }
+            ]
+        }
+
+        // Count total tasks matching filter
+        const totalTasks = await Task.countDocuments(filter)
+
+        // Fetch tasks with pagination, search, and filter
+        const tasks = await Task.aggregate([
+            { $match: filter },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'createdBy',
+                    foreignField: '_id', 
+                    as: 'createdBy'
+                }
+            },
+            { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } },
+            {
+                $project: {
+                    _id: 1,
+                    title: 1,
+                    description: 1,
+                    status: 1,
+                    priority: 1,
+                    createdAt: 1,
+                    dueDate: 1,
+                    createdBy: {
+                        _id: "$createdBy._id",
+                        name: "$createdBy.name",
+                        email: "$createdBy.email"
+                    }
+                }
+            }
+        ])
+
+        res.status(200).json({ 
+            tasks, 
+            totalPages: Math.ceil(totalTasks / limit),
+            currentPage: pageNumber,
+            totalTasks
+        })
     } catch (error) {
         console.log('Get all tasks - admin: ', error)
         res.status(500).json({ message: "Server Error" })

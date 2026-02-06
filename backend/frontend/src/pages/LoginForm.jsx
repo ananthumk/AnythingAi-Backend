@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import AppContext from '../context/AppContext';
 import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
 
 export default function LoginForm() {
     const [errMsg, setErrMsg] = useState('');
@@ -43,16 +44,20 @@ export default function LoginForm() {
                 updateToken(response.data.token);
                 localStorage.setItem('token', response.data.token);
                 setUserInfo({ name: '', email: '', password: '', role: 'user' });
-                if (response.data.user.role === 'admin') {
-                    navigate('/admin');
-                } else {
-                    navigate('/');
-                }
-            } else {
-                setErrMsg(response.data.message);
+                const successMsg = login ? 'Login successful!' : 'Registration successful!';
+                toast.success(successMsg);
+                setTimeout(() => {
+                    if (response.data.data.role === 'admin') {
+                        navigate('/admin');
+                    } else {
+                        navigate('/');
+                    }
+                }, 500);
             }
         } catch (error) {
-            setErrMsg(error.response?.data?.message || error.message);
+            const errorMsg = error.response?.data?.message || error.message;
+            setErrMsg(errorMsg);
+            toast.error(errorMsg);
         }
     };
 
@@ -119,7 +124,6 @@ export default function LoginForm() {
                     >
                         {buttonText}
                     </button>
-                    {errMsg && <p className='text-[13px] text-center font-medium text-red-500'>{errMsg}</p>}
                 </form>
                 {!login && (
                     <p className='text-md text-start mt-2 text-gray-700'>
@@ -134,6 +138,7 @@ export default function LoginForm() {
                     </p>
                 )}
             </div>
+            <ToastContainer position="bottom-right" autoClose={3000} />
         </div>
     );
 }

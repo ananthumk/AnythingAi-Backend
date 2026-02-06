@@ -44,7 +44,7 @@ const taskRoutes = express.Router()
  *       401:
  *         description: Unauthorized
  */
-taskRoutes.post('/', authenticate, validate(addTaskSchema), addTask)
+taskRoutes.post('/', authenticate, authorizeRole('user'), validate(addTaskSchema), addTask)
 
 /**
  * @swagger
@@ -69,7 +69,7 @@ taskRoutes.post('/', authenticate, validate(addTaskSchema), addTask)
  *       401:
  *         description: Unauthorized
  */
-taskRoutes.get('/', authenticate, getAllTask)
+taskRoutes.get('/', authenticate, authorizeRole('user'), getAllTask)
 
 /**
  * @swagger
@@ -94,7 +94,7 @@ taskRoutes.get('/', authenticate, getAllTask)
  *       403:
  *         description: Unauthorized to view this task
  */
-taskRoutes.get('/:id', authenticate, getTaskById)
+taskRoutes.get('/:id', authenticate, authorizeRole('user'), getTaskById)
 
 /**
  * @swagger
@@ -132,7 +132,7 @@ taskRoutes.get('/:id', authenticate, getTaskById)
  *       404:
  *         description: Task not found
  */
-taskRoutes.patch('/:id', authenticate, validate(updateTaskSchema), updateTask)
+taskRoutes.patch('/:id', authenticate, authorizeRole('user'), validate(updateTaskSchema), updateTask)
 
 /**
  * @swagger
@@ -154,7 +154,7 @@ taskRoutes.patch('/:id', authenticate, validate(updateTaskSchema), updateTask)
  *       404:
  *         description: Task not found
  */
-taskRoutes.delete('/:id', authenticate, deleteTask)
+taskRoutes.delete('/:id', authenticate, authorizeRole('user'), deleteTask)
 
 /**
  * @swagger
